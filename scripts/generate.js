@@ -32,12 +32,12 @@ async function run(){
   result.sort((a,b)=>a.date.localeCompare(b.date));
 
   // =========================
-  // 🔥 今日から5日だけ抽出
+  // 🔥 今日から5日だけ
   // =========================
 
   const today = new Date();
 
-  const filtered = [];
+  const output = [];
 
   for(let i=0;i<5;i++){
 
@@ -48,29 +48,23 @@ async function run(){
 
     const found = result.find(r => r.date === key);
 
-    filtered.push(
-      found || {
-        date: key,
-        user1: "",
-        user2: ""
-      }
-    );
+    output.push(found || {
+      date: key,
+      user1: "",
+      user2: ""
+    });
   }
 
   // =========================
-  // 出力（KWGT向け）
+  // JSON出力（配列直出し）
   // =========================
-
-  const output = {
-    data: filtered
-  };
 
   fs.writeFileSync(
     "public/api/schedule.json",
-    JSON.stringify(result)
+    JSON.stringify(output)
   );
 
-  console.log("generated 5-day schedule");
+  console.log("generated 5-day flat JSON");
 }
 
 run();
