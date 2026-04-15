@@ -2,7 +2,9 @@ const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
 
-// ===== Firebase認証 =====
+// =======================
+// Firebase認証（GitHub Secrets）
+// =======================
 const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
 
 admin.initializeApp({
@@ -11,42 +13,51 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// ===== 出力パス =====
+// =======================
+// 出力先設定
+// =======================
 const dir = path.join(__dirname, "../public/api");
 const filePath = path.join(dir, "schedule.txt");
 
-// ★重要：フォルダ作成（これが今回のバグ原因）
+// フォルダが無い場合は作成（超重要）
 fs.mkdirSync(dir, { recursive: true });
 
-async function run(){
+// =======================
+// メイン処理
+// =======================
+async function run() {
+  try {
+    const snap = await db.collection("calendars")
+      .doc("family-calendar")
+      .collection("days")
+      .get();
 
-  const snap = await db.collection("calendars")
-    .doc("family-calendar")
-    .collection("days")
-    .get();
+    let result = [];
 
-  let result = [];
+    snap.forEach(doc => {
+      result.push({
+        date: doc.id,
+        ...doc.data()
+      });
+    });
 
-  snap.forEach(doc=>{
-    result.push({date: doc.id, ...doc.data()});
-  });
+    // 日付ソート（文字列ISO前提）
+    result.sort((a, b) => a.date.localeCompare(b.date));
 
-  result.sort((a,b)=>a.date.localeCompare(b.date));
+    // =======================
+    // ★ここが重要：JSON出力
+    // =======================
+    const output = JSON.stringify(result);
 
-  let text = "";
+    fs.writeFileSync(filePath, output, "utf-8");
 
-  result.forEach(item=>{
-    const d = new Date(item.date);
+    console.log("✅ schedule JSON generated:", filePath);
+    console.log("📦 items:", result.length);
 
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-
-    text += `${mm}/${dd} ${item.user1 || "-"} / ${item.user2 || "-"}\n`;
-  });
-
-  fs.writeFileSync(filePath, text, "utf-8");
-
-  console.log("generated:", filePath);
+  } catch (error) {
+    console.error("❌ Error generating schedule:", error);
+    process.exit(1);
+  }
 }
 
 run();
