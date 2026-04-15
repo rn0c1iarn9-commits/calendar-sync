@@ -1,7 +1,8 @@
 const admin = require("firebase-admin");
 const fs = require("fs");
+const path = require("path");
 
-// GitHub Secretsから読み込み
+// ===== Firebase認証 =====
 const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
 
 admin.initializeApp({
@@ -9,6 +10,13 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+
+// ===== 出力パス =====
+const dir = path.join(__dirname, "../public/api");
+const filePath = path.join(dir, "schedule.txt");
+
+// ★重要：フォルダ作成（これが今回のバグ原因）
+fs.mkdirSync(dir, { recursive: true });
 
 async function run(){
 
@@ -25,20 +33,20 @@ async function run(){
 
   result.sort((a,b)=>a.date.localeCompare(b.date));
 
-  const now = new Date();
-
   let text = "";
 
   result.forEach(item=>{
     const d = new Date(item.date);
+
     const mm = String(d.getMonth()+1).padStart(2,"0");
     const dd = String(d.getDate()).padStart(2,"0");
 
     text += `${mm}/${dd} ${item.user1 || "-"} / ${item.user2 || "-"}\n`;
   });
 
-  fs.writeFileSync("public/api/schedule.txt", text);
-  console.log("generated");
+  fs.writeFileSync(filePath, text, "utf-8");
+
+  console.log("generated:", filePath);
 }
 
 run();
