@@ -1,6 +1,7 @@
 const admin = require("firebase-admin");
 const fs = require("fs");
 
+// ===== Firebase 初期化 =====
 const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
 
 admin.initializeApp({
@@ -9,62 +10,97 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-function formatDate(d){
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const dd = String(d.getDate()).padStart(2,"0");
-  return `${yyyy}-${mm}-${dd}`;
+// ===== 日付フォーマット（4/15(火)）=====
+function formatDateJP(dateStr){
+  const d = new Date(dateStr);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+
+  const week = ["日","月","火","水","木","金","土"];
+  const w = week[d.getDay()];
+
+  return `${m}/${day}(${w})`;
 }
 
+// ===== 色識別用マーク =====
+function mark(v){
+  if(v === "出社") return "R出社"; // 赤
+  if(v === "在宅") return "B在宅"; // 青
+  if(v === "休日") return "G休日"; // 緑
+  return "-";
+}
+
+// ===== メイン処理 =====
 async function run(){
 
+  // Firestore取得
   const snap = await db.collection("calendars")
     .doc("family-calendar")
     .collection("days")
     .get();
 
-  let result = [];
+  let data = [];
 
   snap.forEach(doc=>{
-    result.push({date: doc.id, ...doc.data()});
+    data.push({date: doc.id, ...doc.data()});
   });
 
-  result.sort((a,b)=>a.date.localeCompare(b.date));
+  // 日付順ソート
+  data.sort((a,b)=>a.date.localeCompare(b.date));
 
-  // =========================
-  // 🔥 今日から5日だけ
-  // =========================
-
+  // ===== 今日から5日 =====
   const today = new Date();
 
-  const output = [];
+  let days = [];
 
   for(let i=0;i<5;i++){
-
     const d = new Date(today);
     d.setDate(today.getDate() + i);
 
-    const key = formatDate(d);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
 
-    const found = result.find(r => r.date === key);
+    const key = `${yyyy}-${mm}-${dd}`;
 
-    output.push(found || {
+    const found = data.find(x => x.date === key);
+
+    days.push(found || {
       date: key,
       user1: "",
       user2: ""
     });
   }
 
-  // =========================
-  // JSON出力（配列直出し）
-  // =========================
+  // ===== TXT生成（カンマ区切り）=====
 
-  fs.writeFileSync(
-    "public/api/schedule.json",
-    JSON.stringify(output)
-  );
+  // 日付行
+  let line1 = "";
+  days.forEach(d=>{
+    line1 += formatDateJP(d.date) + ",";
+  });
 
-  console.log("generated 5-day flat JSON");
+  // user1行
+  let line2 = "";
+  days.forEach(d=>{
+    line2 += mark(d.user1) + ",";
+  });
+
+  // user2行
+  let line3 = "";
+  days.forEach(d=>{
+    line3 += mark(d.user2) + ",";
+  });
+
+  const text =
+    line1 + "\n" +
+    line2 + "\n" +
+    line3;
+
+  // ===== 出力 =====
+  fs.writeFileSync("public/api/schedule.txt", text);
+
+  console.log("TXT generated (5 days)");
 }
 
 run();
