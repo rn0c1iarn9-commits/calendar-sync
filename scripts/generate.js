@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const fs = require("fs");
 
-// ===== Firebase 初期化 =====
+// ===== Firebase =====
 const serviceAccount = JSON.parse(process.env.FIREBASE_KEY);
 
 admin.initializeApp({
@@ -10,7 +10,7 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// ===== 日付フォーマット（4/15(火)）=====
+// ===== 日付フォーマット =====
 function formatDateJP(dateStr){
   const d = new Date(dateStr);
   const m = d.getMonth() + 1;
@@ -22,18 +22,22 @@ function formatDateJP(dateStr){
   return `${m}/${day}(${w})`;
 }
 
-// ===== 色識別用マーク =====
-function mark(v){
-  if(v === "出社") return "R出社"; // 赤
-  if(v === "在宅") return "B在宅"; // 青
-  if(v === "休日") return "G休日"; // 緑
-  return "-";
+// ===== 中央揃え（ここが重要）=====
+function padCenter(str, len){
+  str = str || "";
+  const space = len - str.length;
+
+  if(space <= 0) return str;
+
+  const left = Math.floor(space / 2);
+  const right = space - left;
+
+  return " ".repeat(left) + str + " ".repeat(right);
 }
 
-// ===== メイン処理 =====
+// ===== メイン =====
 async function run(){
 
-  // Firestore取得
   const snap = await db.collection("calendars")
     .doc("family-calendar")
     .collection("days")
@@ -45,7 +49,6 @@ async function run(){
     data.push({date: doc.id, ...doc.data()});
   });
 
-  // 日付順ソート
   data.sort((a,b)=>a.date.localeCompare(b.date));
 
   // ===== 今日から5日 =====
@@ -72,35 +75,36 @@ async function run(){
     });
   }
 
-  // ===== TXT生成（カンマ区切り）=====
+  // ===== 幅 =====
+  const labelWidth = 8;
+  const colWidth   = 12;
 
-  // 日付行
-  let line1 = "";
+  // ===== 日付行 =====
+  let line1 = padCenter("", labelWidth);
+
   days.forEach(d=>{
-    line1 += formatDateJP(d.date) + ",";
+    line1 += padCenter(formatDateJP(d.date), colWidth);
   });
 
-  // user1行
-  let line2 = "";
+  // ===== user1 =====
+  let line2 = padCenter("user1", labelWidth);
+
   days.forEach(d=>{
-    line2 += mark(d.user1) + ",";
+    line2 += padCenter(d.user1 || "-", colWidth);
   });
 
-  // user2行
-  let line3 = "";
+  // ===== user2 =====
+  let line3 = padCenter("user2", labelWidth);
+
   days.forEach(d=>{
-    line3 += mark(d.user2) + ",";
+    line3 += padCenter(d.user2 || "-", colWidth);
   });
 
-  const text =
-    line1 + "\n" +
-    line2 + "\n" +
-    line3;
+  const text = line1 + "\n" + line2 + "\n" + line3;
 
-  // ===== 出力 =====
   fs.writeFileSync("public/api/schedule.txt", text);
 
-  console.log("TXT generated (5 days)");
+  console.log("center aligned TXT generated");
 }
 
 run();
