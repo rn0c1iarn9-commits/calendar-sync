@@ -47,9 +47,14 @@ async function run() {
     // =======================
     // ★ここが重要：JSON出力
     // =======================
-    const output = JSON.stringify(result);
+    const output = {
+      data: result
+    };
 
-    fs.writeFileSync(filePath, output, "utf-8");
+    fs.writeFileSync(
+      "public/api/schedule.json",
+      JSON.stringify(output)
+    );
 
     console.log("✅ schedule JSON generated:", filePath);
     console.log("📦 items:", result.length);
