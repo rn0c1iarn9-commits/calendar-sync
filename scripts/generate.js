@@ -52,7 +52,11 @@ async function run(){
   data.sort((a,b)=>a.date.localeCompare(b.date));
 
   // ===== 今日から5日 =====
-  const today = new Date();
+  const now = new Date();
+  const today = new Date(
+    now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+  );
+  today.setHours(0,0,0,0);  
 
   let days = [];
 
