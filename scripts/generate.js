@@ -94,14 +94,14 @@ async function run(){
   let line2 = padCenter("     ", labelWidth);
 
   days.forEach(d=>{
-    line2 += padCenter(d.user1 || "-", colWidth);
+    line2 += " " + padCenter(d.user1 || "-", colWidth);
   });
 
   // ===== user2 =====
   let line3 = padCenter("     ", labelWidth);
 
   days.forEach(d=>{
-    line3 += padCenter(d.user2 || "-", colWidth);
+    line3 += " " + padCenter(d.user2 || "-", colWidth);
   });
 
   const text = line1 + "\n" + line2 + "\n" + line3;
