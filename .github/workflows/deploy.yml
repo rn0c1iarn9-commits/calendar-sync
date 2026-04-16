@@ -2,7 +2,7 @@ name: Sync Calendar
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # 30分ごと更新
+    - cron: "*/5 * * * *" # 30分ごと更新
   workflow_dispatch:
 
 jobs:
@@ -13,23 +13,38 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # ① npmキャッシュを有効化（重要）
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: 18
+        cache: 'npm'
 
+    # 依存インストール（キャッシュで高速化）
     - name: Install deps
-      run: npm install
+      run: npm ci
 
+    # 生成処理
     - name: Generate schedule.txt
       env:
         FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
       run: node scripts/generate.js
 
-    - name: Commit files
+    # ② 変更がある時だけコミットする仕組み
+    - name: Check for changes
+      id: diff
+      run: |
+        if git diff --quiet; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit and push
+      if: steps.diff.outputs.changed == 'true'
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "actions@github.com"
         git add .
-        git commit -m "auto update" || exit 0
+        git commit -m "auto update schedule"
         git push
