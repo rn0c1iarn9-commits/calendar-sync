@@ -2,7 +2,7 @@ name: Sync Calendar
 
 on:
   schedule:
-    - cron: "*/5 * * * *" # 30分ごと更新
+    - cron: "*/30 * * * *" # 30分ごと更新
   workflow_dispatch:
 
 jobs:

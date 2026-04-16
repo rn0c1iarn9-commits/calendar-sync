@@ -91,14 +91,14 @@ async function run(){
   });
 
   // ===== user1 =====
-  let line2 = padCenter("user1", labelWidth);
+  let line2 = padCenter("     ", labelWidth);
 
   days.forEach(d=>{
     line2 += padCenter(d.user1 || "-", colWidth);
   });
 
   // ===== user2 =====
-  let line3 = padCenter("user2", labelWidth);
+  let line3 = padCenter("     ", labelWidth);
 
   days.forEach(d=>{
     line3 += padCenter(d.user2 || "-", colWidth);
